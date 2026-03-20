@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: monospace; background: #fff; color: #000; padding: 10px; }
+.container { max-width: 600px; margin: 0 auto; }
+.panel { background: #fff; padding: 15px; margin-bottom: 10px; }
+.panel-title { font-size: 12px; margin-bottom: 10px; font-weight: bold; }
+.drive-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.drive-btn { background: #fff; border: 1px solid #000; color: #000; font-size: 14px; padding: 25px; cursor: pointer; font-family: monospace; }
+.drive-btn:active { background: #000; color: #fff; }
+.drive-btn.center { background: #fff; }
+.mode-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.mode-btn { background: #fff; border: 1px solid #000; color: #000; padding: 12px; cursor: pointer; font-family: monospace; font-size: 12px; }
+.mode-btn.active { background: #000; color: #fff; }
+.slider-group { margin: 10px 0; }
+.slider-group label { display: block; margin-bottom: 5px; font-size: 12px; }
+.slider-group input[type="range"] { width: 100%; height: 4px; background: #ccc; outline: none; border: 1px solid #000; }
+.slider-group .value { display: inline-block; margin-left: 10px; font-weight: bold; }
+.telemetry { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.telemetry-item { background: #fff; border: 1px solid #000; padding: 8px; }
+.telemetry-item .label { font-size: 10px; }
+.telemetry-item .value { font-size: 14px; font-weight: bold; margin-top: 3px; }
+.poles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+.pole { background: #fff; border: 1px solid #000; padding: 8px; text-align: center; font-size: 12px; }
+.pole.active { background: #000; color: #fff; }
+.action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.action-btn { background: #fff; border: 1px solid #000; color: #000; padding: 10px; cursor: pointer; font-family: monospace; font-size: 12px; }
+.status { text-align: center; padding: 8px; background: #fff; border: 1px solid #000; margin-top: 10px; font-size: 12px; }
+.status.connected { background: #000; color: #fff; }
+.ac-input { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+.ac-input label { font-size: 12px; }
+.ac-input input, .ac-input select { background: #fff; border: 1px solid #000; padding: 5px; font-family: monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="panel">
+<div class="panel-title">Starfish</div>
+<div class="drive-pad">
+<div></div>
+<button class="drive-btn" data-dir="forward">up</button>
+<div></div>
+<button class="drive-btn" data-dir="left">left</button>
+<div class="drive-btn center">stop</div>
+<button class="drive-btn" data-dir="right">right</button>
+<div></div>
+<button class="drive-btn" data-dir="backward">down</button>
+<div></div>
+</div>
+</div>
+
+<div class="panel">
+<div class="mode-buttons">
+<button class="mode-btn" data-mode="safe_idle">safe idle</button>
+<button class="mode-btn" data-mode="active_drive">active drive</button>
+<button class="mode-btn" data-mode="stabilize">stabilize</button>
+<button class="mode-btn" data-mode="hill_hold">hill hold</button>
+</div>
+</div>
+
+<div class="panel">
+<div class="slider-group">
+<label>kick duration <span class="value" id="kickVal">50</span></label>
+<input type="range" id="kickMs" min="10" max="150" value="50" step="5">
+</div>
+<div class="slider-group">
+<label>hold duty <span class="value" id="holdDutyVal">77</span></label>
+<input type="range" id="holdDuty" min="0" max="255" value="77" step="1">
+</div>
+<div class="slider-group">
+<label>hold frequency <span class="value" id="holdFreqVal">100</span></label>
+<input type="range" id="holdFreq" min="50" max="2000" value="100" step="10">
+</div>
+</div>
+
+<div class="panel">
+<div class="telemetry">
+<div class="telemetry-item"><div class="label">frame angle</div><div class="value" id="tAngle">0</div></div>
+<div class="telemetry-item"><div class="label">gyro dps</div><div class="value" id="tGyro">0</div></div>
+<div class="telemetry-item"><div class="label">pitch deg</div><div class="value" id="tPitch">0</div></div>
+<div class="telemetry-item"><div class="label">mode</div><div class="value" id="tMode">safe idle</div></div>
+<div class="telemetry-item"><div class="label">kick duty</div><div class="value" id="tKick">255</div></div>
+<div class="telemetry-item"><div class="label">hold duty</div><div class="value" id="tHold">77</div></div>
+</div>
+<div class="poles">
+<div class="pole" id="pN">n</div>
+<div class="pole" id="pE">e</div>
+<div class="pole" id="pS">s</div>
+<div class="pole" id="pW">w</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="ac-input">
+<label>roll ms</label>
+<input type="number" id="acRoll" value="800" min="100" max="5000" step="50">
+</div>
+<div class="ac-input">
+<label>pause ms</label>
+<input type="number" id="acPause" value="600" min="100" max="5000" step="50">
+</div>
+<div class="ac-input">
+<label>direction</label>
+<select id="acDir">
+<option value="forward">forward</option>
+<option value="backward">backward</option>
+</select>
+</div>
+<button class="action-btn" style="width:100%;margin-top:5px" onclick="startAutoCycle()">start auto cycle</button>
+</div>
+
+<div class="panel">
+<div class="action-buttons">
+<button class="action-btn" onclick="savePreset()">save preset</button>
+<button class="action-btn" onclick="resetAdapt()">reset adaptive</button>
+</div>
+</div>
+
+<div class="status" id="status">disconnected</div>
+
+</div>
+
+<script>
+(function(){
+var ws=null, connected=false, pingIv=null, sliderTimeout=null;
+var host=location.hostname||'192.168.4.1';
+
+function connect(){
+if(ws&&(ws.readyState===0||ws.readyState===1))return;
+ws=new WebSocket('ws://'+host+'/ws');
+ws.onopen=function(){
+connected=true;
+document.getElementById('status').textContent='connected';
+document.getElementById('status').className='status connected';
+if(pingIv)clearInterval(pingIv);
+pingIv=setInterval(function(){send({cmd:'ping'})},1500);
+};
+ws.onclose=ws.onerror=function(){
+connected=false;
+document.getElementById('status').textContent='disconnected';
+document.getElementById('status').className='status';
+if(pingIv){clearInterval(pingIv);pingIv=null}
+setTimeout(connect,2000);
+};
+ws.onmessage=function(e){
+try{var d=JSON.parse(e.data);updateTelemetry(d)}catch(ex){}
+};
+}
+
+function send(obj){
+if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj));
+}
+
+var dpadBtns=document.querySelectorAll('.drive-btn[data-dir]');
+dpadBtns.forEach(function(btn){
+function start(e){
+e.preventDefault();
+send({cmd:'drive',dir:btn.dataset.dir});
+}
+function stop(e){
+e.preventDefault();
+send({cmd:'drive',dir:'stop'});
+}
+btn.addEventListener('mousedown',start);
+btn.addEventListener('mouseup',stop);
+btn.addEventListener('mouseleave',stop);
+btn.addEventListener('touchstart',start,{passive:false});
+btn.addEventListener('touchend',stop,{passive:false});
+btn.addEventListener('touchcancel',stop,{passive:false});
+});
+
+var modeBtns=document.querySelectorAll('.mode-btn[data-mode]');
+modeBtns.forEach(function(btn){
+btn.addEventListener('click',function(){
+send({cmd:'mode',val:btn.dataset.mode});
+});
+});
+
+function sendPWM(){
+var kickMs=parseInt(document.getElementById('kickMs').value);
+var holdD=parseInt(document.getElementById('holdDuty').value);
+var holdF=parseInt(document.getElementById('holdFreq').value);
+document.getElementById('kickVal').textContent=kickMs;
+document.getElementById('holdDutyVal').textContent=holdD;
+document.getElementById('holdFreqVal').textContent=holdF;
+if(sliderTimeout)clearTimeout(sliderTimeout);
+sliderTimeout=setTimeout(function(){
+send({cmd:'set_pwm',kick_ms:kickMs,hold_duty:holdD,freq:holdF});
+},200);
+}
+document.getElementById('kickMs').addEventListener('input',sendPWM);
+document.getElementById('holdDuty').addEventListener('input',sendPWM);
+document.getElementById('holdFreq').addEventListener('input',sendPWM);
+
+function updateTelemetry(d){
+document.getElementById('tAngle').textContent=(d.frame_angle||0).toFixed(1);
+document.getElementById('tGyro').textContent=(d.gyro_dps||0).toFixed(1);
+document.getElementById('tPitch').textContent=(d.pitch_deg||0).toFixed(1);
+document.getElementById('tMode').textContent=d.mode||'safe idle';
+if(d.adapt){
+document.getElementById('tKick').textContent=d.adapt.kick_duty;
+document.getElementById('tHold').textContent=d.adapt.hold_duty;
+}
+if(d.poles){
+['N','E','S','W'].forEach(function(p){
+var el=document.getElementById('p'+p);
+var st=d.poles[p]||'IDLE';
+el.className='pole'+(st!=='IDLE'?' active':'');
+el.textContent=p.toLowerCase();
+});
+}
+modeBtns.forEach(function(btn){
+btn.classList.toggle('active',btn.dataset.mode===d.mode);
+});
+}
+
+window.startAutoCycle=function(){
+send({
+cmd:'autocycle',
+roll_ms:parseInt(document.getElementById('acRoll').value),
+pause_ms:parseInt(document.getElementById('acPause').value),
+dir:document.getElementById('acDir').value
+});
+};
+
+window.savePreset=function(){send({cmd:'save_preset',mode:'drive'})};
+window.resetAdapt=function(){send({cmd:'reset_adapt'})};
+
+connect();
+})();
+</script>
+</body>
+</html>
